@@ -36,6 +36,7 @@ async fn get_account_key_per_id(postgres_client: Arc<tokio_postgres::Client>, ac
     
 }
 
+// Handler of the account details endpoint
 async fn account_details(
     Extension(postgres_client): Extension<Arc<tokio_postgres::Client>>,
     Path(account_id): Path<String>
@@ -47,6 +48,7 @@ async fn account_details(
     }
 }
 
+// Handler for NATS to perform an healthcheck on the endpoint
 async fn accounts_base() -> impl IntoResponse {
     (StatusCode::OK, "OK")
 }
@@ -54,6 +56,7 @@ async fn accounts_base() -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
 
+    // Setup environment
     let postgres_client = setup_postgres_client().await;
     let postgres_client = Arc::new(postgres_client);
 
@@ -118,8 +121,8 @@ mod tests {
         assert!(result.is_ok(), "Failed the test to get account jwt: {:?}", result);
     
         // Cleanup
-        // let result = postgres_client_two.execute("DELETE FROM nats WHERE id = $1", &[&user_id])
-        //     .await;
-        // assert!(result.is_ok(), "Failed to delete nsc user: {:?}", result);
+        let result = postgres_client_two.execute("DELETE FROM nats WHERE id = $1", &[&user_id])
+            .await;
+        assert!(result.is_ok(), "Failed to delete nsc user: {:?}", result);
     }
 }
