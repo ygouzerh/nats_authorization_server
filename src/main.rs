@@ -2,11 +2,11 @@ use axum::{
     extract::Path, http::StatusCode, response::IntoResponse, routing::get, Extension, Router
 };
 
-use std::{env, net::SocketAddr, sync::Arc};
+use std::{env, net::{IpAddr, SocketAddr}, str::FromStr, sync::Arc};
 use tokio_postgres::NoTls;
 
 async fn setup_postgres_client() -> tokio_postgres::Client {
-    let database_connection_string = env::var("DATABASE_CONNECTION_STRING").expect("DATABASE_CONNECTION_STRING must be set");
+    let database_connection_string = env::var("AUTHORIZATION_DB_CONNECTION_STRING").expect("AUTHORIZATION_DB_CONNECTION_STRING must be set");
     let (postgres_client, connection) =
         tokio_postgres::connect(&database_connection_string, NoTls)
         .await
@@ -56,6 +56,9 @@ async fn main() {
 
     let postgres_client = setup_postgres_client().await;
     let postgres_client = Arc::new(postgres_client);
+
+    let host = env::var("AUTHORIZATION_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("AUTHORIZATION_PORT").unwrap_or_else(|_| "9091".to_string());
     
     // Set up the router
     let app = Router::new()
@@ -64,7 +67,10 @@ async fn main() {
         .layer(Extension(Arc::clone(&postgres_client))); // Base path
     
     // Define the server address
-    let addr = SocketAddr::from(([127, 0, 0, 1], 9091));
+    let ip_addr = IpAddr::from_str(&host).unwrap();
+    let port_num = port.parse::<u16>().unwrap();
+    let addr = SocketAddr::new(ip_addr, port_num);
+    
     println!("Listening on {}", addr);
 
     // Start the server
